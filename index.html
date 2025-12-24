@@ -107,8 +107,8 @@
         for _ in range(${popupCount}):
             # 随机位置 (使用动态计算的安全边距)
             # 确保 x 坐标不会导致放大的弹窗超出屏幕
-            x = random.randint(0, width - 300)
-            y = random.randint(0, height - 100)           
+            x = random.randint(0, width - 200)
+            y = random.randint(0, height - 30)           
             
             text = random.choice(texts)
             theme = random.choice(themes)
@@ -174,3 +174,4 @@
 </body>
 
 </html>
+
