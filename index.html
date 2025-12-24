@@ -4,15 +4,13 @@
 <head>
   <meta charset="UTF-8">
   <title>立冬</title>
-  <!-- 外部引入样式文件 -->
   <link rel="stylesheet" href="styles.css">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 </head>
 
 <body>
-  <!-- 弹窗容器（用于统一管理弹窗层级） -->
   <div id="popup-layer"></div>
 
-  <!-- 入场模态框（优化用户体验） -->
   <div class="modal-backdrop" id="start-modal">
     <div class="modal">
       <div class="titlebar">
@@ -28,13 +26,10 @@
     </div>
   </div>
 
-  <!-- 本地音乐播放器（隐藏式） -->
   <audio id="localMusic" loop preload="auto">
-    <source src="music.mp3" type="audio/mpeg"> <!-- 替换为你的本地MP3文件路径 -->
-    您的浏览器不支持音频播放
+    <source src="music.mp3" type="audio/mpeg"> 您的浏览器不支持音频播放
   </audio>
 
-  <!-- 引入Pyodide -->
   <script src="https://cdn.jsdelivr.net/pyodide/v0.23.4/full/pyodide.js"></script>
   <script>
     let pyodide;
@@ -56,7 +51,7 @@
       // 清除现有弹窗
       resetPopups();
 
-      // 播放本地音乐（处理浏览器自动播放限制）
+      // 播放本地音乐
       playLocalMusic();
 
       // 获取浏览器窗口尺寸
@@ -65,7 +60,21 @@
       // 弹窗容器
       const popupLayer = document.getElementById("popup-layer");
 
-      // Python代码：生成弹窗参数（位置、主题、文本）
+      // === 优化部分开始 ===
+      // 判断是否为移动端 (宽度小于768px视为移动端)
+      const isMobile = windowWidth < 768;
+
+      // 移动端放大比例 1.4倍，电脑端保持 1.0
+      const scaleRatio = isMobile ? 1.4 : 1.0;
+
+      // 移动端数量减少防止拥挤 (手机60个，电脑150个)
+      const popupCount = isMobile ? 60 : 150;
+
+      // 计算右侧安全距离 (基础宽度230px * 缩放比例，防止放大后溢出屏幕)
+      const safeMarginRight = Math.floor(230 * scaleRatio);
+      // === 优化部分结束 ===
+
+      // Python代码：生成弹窗参数
       const pythonCode = `
         import random
 
@@ -79,7 +88,7 @@
             '好好爱自己',    '珍惜每一刻',    '别熬夜',    '学会爱自己',    '你超棒的',    '保持好心情',    '多喝温水哦']
  
 
-        # 弹窗主题（对应styles.css中的主题类）
+        # 弹窗主题
         themes = [
             'theme-blue', 'theme-green', 'theme-orange', 'theme-purple', 'theme-pink',
             'theme-yellow', 'theme-cyan', 'theme-lime', 'theme-red', 'theme-teal',
@@ -87,19 +96,23 @@
             'theme-lavender', 'theme-coral', 'theme-sky', 'theme-lemon'
         ]
 
-        # 弹窗动画（对应styles.css中的动画类）
+        # 弹窗动画
         animations = [
             'anim-top', 'anim-bottom', 'anim-left', 'anim-right',
             'anim-topleft', 'anim-topright', 'anim-bottomleft', 'anim-bottomright'
         ]
 
-        # 生成150个弹窗参数
+        # 生成弹窗参数 (使用动态计算的数量)
         popup_params = []
-        for _ in range(150):
-            # 随机位置（适配窗口尺寸，避免弹窗超出屏幕）
-            x = random.randint(0, width - 230)
-            y = random.randint(0, height - 100)
-            # 随机文本、主题、动画
+        for _ in range(${popupCount}):
+            # 随机位置 (使用动态计算的安全边距)
+            # 确保 x 坐标不会导致放大的弹窗超出屏幕
+            max_x = width - ${safeMarginRight}
+            if max_x < 0: max_x = 0
+            
+            x = random.randint(0, max_x)
+            y = random.randint(0, height - 120) # 底部也稍微留多一点空间
+            
             text = random.choice(texts)
             theme = random.choice(themes)
             anim = random.choice(animations)
@@ -116,12 +129,20 @@
       popupParams.forEach(([x, y, text, theme, anim], index) => {
         setTimeout(() => {
           const popup = document.createElement('div');
-          // 应用样式类（基础样式+主题+动画）
+          // 应用样式类
           popup.className = `popup ${theme} ${anim}`;
+
           // 设置位置
           popup.style.left = `${x}px`;
           popup.style.top = `${y}px`;
-          // 弹窗内容（符合styles.css中的结构）
+
+          // === 关键优化：使用transform放大，不改变CSS类 ===
+          if (isMobile) {
+            popup.style.transform = `scale(${scaleRatio})`;
+            popup.style.transformOrigin = 'top left'; // 保证放大后位置偏移可控
+          }
+
+          // 弹窗内容
           popup.innerHTML = `
                         <div class="header">
                             <span class="icon">💖</span>
@@ -131,26 +152,24 @@
                     `;
           // 添加到容器
           popupLayer.appendChild(popup);
-        }, index * 100); // 间隔100ms创建，避免卡顿
+        }, index * 100);
       });
     }
 
-    // 播放本地音乐（处理浏览器自动播放限制）
+    // 播放本地音乐
     function playLocalMusic() {
       localMusic.play().catch(err => {
         console.log("自动播放需要用户交互，点击页面任意位置继续...");
-        // 首次点击页面后触发播放
         document.body.addEventListener('click', () => {
           localMusic.play();
         }, { once: true });
       });
     }
 
-    // 重置弹窗（清除所有弹窗）
+    // 重置弹窗
     function resetPopups() {
       const popupLayer = document.getElementById("popup-layer");
       popupLayer.innerHTML = "";
-      // 重置音乐（可选）
       localMusic.pause();
       localMusic.currentTime = 0;
     }
