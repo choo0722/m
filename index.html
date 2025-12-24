@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+  <meta charset="UTF-8">
+  <title>立冬</title>
+  <!-- 外部引入样式文件 -->
+  <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+  <!-- 弹窗容器（用于统一管理弹窗层级） -->
+  <div id="popup-layer"></div>
+
+  <!-- 入场模态框（优化用户体验） -->
+  <div class="modal-backdrop" id="start-modal">
+    <div class="modal">
+      <div class="titlebar">
+        <span class="icon">❄️</span>
+        <span class="title">To： xxx</span>
+      </div>
+      <div class="content">
+        点击下方按钮，查看温馨提示~
+      </div>
+      <div class="actions">
+        <button class="btn primary" onclick="startPopupEffect()">开始展示</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 本地音乐播放器（隐藏式） -->
+  <audio id="localMusic" loop preload="auto">
+    <source src="music.mp3" type="audio/mpeg"> <!-- 替换为你的本地MP3文件路径 -->
+    您的浏览器不支持音频播放
+  </audio>
+
+  <!-- 引入Pyodide -->
+  <script src="https://cdn.jsdelivr.net/pyodide/v0.23.4/full/pyodide.js"></script>
+  <script>
+    let pyodide;
+    const localMusic = document.getElementById('localMusic'); // 获取音乐元素
+
+    // 初始化Pyodide
+    async function initPyodide() {
+      pyodide = await loadPyodide({ indexURL: "https://cdn.jsdelivr.net/pyodide/v0.23.4/full/" });
+      console.log("Pyodide初始化完成");
+    }
+
+    // 页面加载时初始化
+    window.onload = initPyodide;
+
+    // 开始弹窗效果
+    async function startPopupEffect() {
+      // 隐藏入场模态框
+      document.getElementById("start-modal").style.display = "none";
+      // 清除现有弹窗
+      resetPopups();
+
+      // 播放本地音乐（处理浏览器自动播放限制）
+      playLocalMusic();
+
+      // 获取浏览器窗口尺寸
+      const windowWidth = window.innerWidth;
+      const windowHeight = window.innerHeight;
+      // 弹窗容器
+      const popupLayer = document.getElementById("popup-layer");
+
+      // Python代码：生成弹窗参数（位置、主题、文本）
+      const pythonCode = `
+        import random
+
+        # 窗口尺寸
+        width = ${windowWidth}
+        height = ${windowHeight}
+
+        # 提示文字列表
+        texts = [    '记得加衣！',    '记得照顾好自己',    '天天开心',    '好好吃饭',    '早点休息',    '别感冒',    '要相信自己奥',
+            '愿所有烦恼都消失',    '每天都要元气满满',    '保持微笑呀',    '顺顺利利',    '金榜题名',    '期待下一次见面',
+            '好好爱自己',    '珍惜每一刻',    '别熬夜',    '学会爱自己',    '你超棒的',    '保持好心情',    '多喝温水哦']
+ 
+
+        # 弹窗主题（对应styles.css中的主题类）
+        themes = [
+            'theme-blue', 'theme-green', 'theme-orange', 'theme-purple', 'theme-pink',
+            'theme-yellow', 'theme-cyan', 'theme-lime', 'theme-red', 'theme-teal',
+            'theme-indigo', 'theme-amber', 'theme-rose', 'theme-mint', 'theme-peach',
+            'theme-lavender', 'theme-coral', 'theme-sky', 'theme-lemon'
+        ]
+
+        # 弹窗动画（对应styles.css中的动画类）
+        animations = [
+            'anim-top', 'anim-bottom', 'anim-left', 'anim-right',
+            'anim-topleft', 'anim-topright', 'anim-bottomleft', 'anim-bottomright'
+        ]
+
+        # 生成150个弹窗参数
+        popup_params = []
+        for _ in range(150):
+            # 随机位置（适配窗口尺寸，避免弹窗超出屏幕）
+            x = random.randint(0, width - 230)
+            y = random.randint(0, height - 100)
+            # 随机文本、主题、动画
+            text = random.choice(texts)
+            theme = random.choice(themes)
+            anim = random.choice(animations)
+            popup_params.append((x, y, text, theme, anim))
+
+        popup_params
+                    `;
+
+      // 执行Python代码并转换为JS数组
+      const pythonResult = await pyodide.runPythonAsync(pythonCode);
+      const popupParams = Array.from(pythonResult);
+
+      // 创建弹窗并添加到容器
+      popupParams.forEach(([x, y, text, theme, anim], index) => {
+        setTimeout(() => {
+          const popup = document.createElement('div');
+          // 应用样式类（基础样式+主题+动画）
+          popup.className = `popup ${theme} ${anim}`;
+          // 设置位置
+          popup.style.left = `${x}px`;
+          popup.style.top = `${y}px`;
+          // 弹窗内容（符合styles.css中的结构）
+          popup.innerHTML = `
+                        <div class="header">
+                            <span class="icon">💖</span>
+                            <span class="title">To：xxx</span>
+                        </div>
+                        <div class="content">${text}</div>
+                    `;
+          // 添加到容器
+          popupLayer.appendChild(popup);
+        }, index * 100); // 间隔100ms创建，避免卡顿
+      });
+    }
+
+    // 播放本地音乐（处理浏览器自动播放限制）
+    function playLocalMusic() {
+      localMusic.play().catch(err => {
+        console.log("自动播放需要用户交互，点击页面任意位置继续...");
+        // 首次点击页面后触发播放
+        document.body.addEventListener('click', () => {
+          localMusic.play();
+        }, { once: true });
+      });
+    }
+
+    // 重置弹窗（清除所有弹窗）
+    function resetPopups() {
+      const popupLayer = document.getElementById("popup-layer");
+      popupLayer.innerHTML = "";
+      // 重置音乐（可选）
+      localMusic.pause();
+      localMusic.currentTime = 0;
+    }
+  </script>
+</body>
+
+</html>
