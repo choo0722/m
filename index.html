@@ -56,8 +56,6 @@
       const isMobile = windowWidth < 768;
       // 降低一点缩放比例，给布局留出空间 (1.25倍足够大了)
       const scaleRatio = isMobile ? 1.25 : 1.0;
-      // 手机端减少数量，避免视觉灾难
-      const popupCount = isMobile ? 100 : 150;
 
       const pythonCode = `
         import random
@@ -83,18 +81,16 @@
         ]
 
         popup_params = []
-        for _ in range(${popupCount}):
+        for _ in range(150):
             # === 核心修复逻辑 ===
             if is_mobile:
                 # 手机端：为了防止挤在左边，我们允许弹窗出现在屏幕宽度的 0% 到 70% 之间
                 # 这样即使右边稍微超出屏幕一点，也比挤在左边好
                 max_x = int(width * 0.8)
-                x = random.randint(0, max_x)
-                
-                # 高度分散：利用全屏高度，但避开最顶部和最底部
-                y = random.randint(0, height - 50)
+                x = random.randint(0, width-200)
+                y = random.randint(0, height-50)
             else:
-                # 电脑端：原有逻辑，严格防止溢出
+                # 电脑端
                 max_x = width - 230
                 if max_x < 0: max_x = 0
                 x = random.randint(0, max_x)
