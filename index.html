@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>我的第一个上线网页</title>
+    <style>
+        /* 简单的样式让页面看起来很专业 */
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            text-align: center;
+        }
+        .container {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 3rem;
+            border-radius: 20px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        h1 { margin-bottom: 10px; font-size: 2.5rem; }
+        p { font-size: 1.2rem; opacity: 0.9; }
+        .btn {
+            margin-top: 20px;
+            padding: 10px 25px;
+            background: #fff;
+            color: #764ba2;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: transform 0.2s;
+        }
+        .btn:hover { transform: scale(1.1); }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>🚀 成功了！</h1>
+        <p>这是我的第一个通过 GitHub Pages 发布的网页。</p>
+        <div id="time"></div>
+        <button class="btn" onclick="celebrate()">点击庆祝</button>
+    </div>
+
+    <script>
+        // 显示当前时间
+        function updateTime() {
+            const now = new Date();
+            document.getElementById('time').innerText = "当前时间：" + now.toLocaleString();
+        }
+        setInterval(updateTime, 1000);
+        updateTime();
+
+        // 简单的交互
+        function celebrate() {
+            alert("🎉 太棒了！你的前端页面已经可以被全世界看到了！");
+        }
+    </script>
+</body>
+</html>
