@@ -41,7 +41,7 @@
       console.log("Pyodide初始化完成");
     }
 
-    // 页面加载时初始化 
+    // 页面加载时初始化
     window.onload = initPyodide;
 
     // 开始弹窗效果
@@ -71,7 +71,7 @@
       const popupCount = isMobile ? 100 : 150;
 
       // 计算右侧安全距离 (基础宽度230px * 缩放比例，防止放大后溢出屏幕)
-      //const safeMarginRight = Math.floor(230 * scaleRatio);
+      const safeMarginRight = Math.floor(230 * scaleRatio);
       // === 优化部分结束 ===
 
       // Python代码：生成弹窗参数
@@ -106,9 +106,9 @@
         popup_params = []
         for _ in range(${popupCount}):
             # 随机位置 (使用动态计算的安全边距)
-            # 随机位置（适配窗口尺寸，避免弹窗超出屏幕）
-            x = random.randint(0, width - 230)
-            y = random.randint(0, height - 100)
+            # 确保 x 坐标不会导致放大的弹窗超出屏幕
+            x = random.randint(0, width - 300)
+            y = random.randint(0, height - 100)           
             
             text = random.choice(texts)
             theme = random.choice(themes)
@@ -174,6 +174,3 @@
 </body>
 
 </html>
-
-
-
