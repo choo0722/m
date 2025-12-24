@@ -33,7 +33,7 @@
   <script src="https://cdn.jsdelivr.net/pyodide/v0.23.4/full/pyodide.js"></script>
   <script>
     let pyodide;
-    const localMusic = document.getElementById('localMusic'); // 获取音乐元素
+    const localMusic = document.getElementById('localMusic');
 
     // 初始化Pyodide
     async function initPyodide() {
@@ -41,54 +41,35 @@
       console.log("Pyodide初始化完成");
     }
 
-    // 页面加载时初始化
     window.onload = initPyodide;
 
-    // 开始弹窗效果
     async function startPopupEffect() {
-      // 隐藏入场模态框
       document.getElementById("start-modal").style.display = "none";
-      // 清除现有弹窗
       resetPopups();
-
-      // 播放本地音乐
       playLocalMusic();
 
-      // 获取浏览器窗口尺寸
       const windowWidth = window.innerWidth;
       const windowHeight = window.innerHeight;
-      // 弹窗容器
       const popupLayer = document.getElementById("popup-layer");
 
-      // === 优化部分开始 ===
-      // 判断是否为移动端 (宽度小于768px视为移动端)
+      // === 修复配置 ===
       const isMobile = windowWidth < 768;
-
-      // 移动端放大比例 1.4倍，电脑端保持 1.0
-      const scaleRatio = isMobile ? 1.4 : 1.0;
-
-      // 移动端数量减少防止拥挤 (手机60个，电脑150个)
+      // 降低一点缩放比例，给布局留出空间 (1.25倍足够大了)
+      const scaleRatio = isMobile ? 1.25 : 1.0;
+      // 手机端减少数量，避免视觉灾难
       const popupCount = isMobile ? 100 : 150;
 
-      // 计算右侧安全距离 (基础宽度230px * 缩放比例，防止放大后溢出屏幕)
-      const safeMarginRight = Math.floor(230 * scaleRatio);
-      // === 优化部分结束 ===
-
-      // Python代码：生成弹窗参数
       const pythonCode = `
         import random
 
-        # 窗口尺寸
         width = ${windowWidth}
         height = ${windowHeight}
+        is_mobile = ${isMobile ? 'True' : 'False'}
 
-        # 提示文字列表
         texts = [    '记得加衣！',    '记得照顾好自己',    '天天开心',    '好好吃饭',    '早点休息',    '别感冒',    '要相信自己奥',
             '愿所有烦恼都消失',    '每天都要元气满满',    '保持微笑呀',    '顺顺利利',    '金榜题名',    '期待下一次见面',
             '好好爱自己',    '珍惜每一刻',    '别熬夜',    '学会爱自己',    '你超棒的',    '保持好心情',    '多喝温水哦']
- 
 
-        # 弹窗主题
         themes = [
             'theme-blue', 'theme-green', 'theme-orange', 'theme-purple', 'theme-pink',
             'theme-yellow', 'theme-cyan', 'theme-lime', 'theme-red', 'theme-teal',
@@ -96,77 +77,78 @@
             'theme-lavender', 'theme-coral', 'theme-sky', 'theme-lemon'
         ]
 
-        # 弹窗动画
         animations = [
             'anim-top', 'anim-bottom', 'anim-left', 'anim-right',
             'anim-topleft', 'anim-topright', 'anim-bottomleft', 'anim-bottomright'
         ]
 
-        # 生成弹窗参数 (使用动态计算的数量)
         popup_params = []
         for _ in range(${popupCount}):
-            # 随机位置 (使用动态计算的安全边距)
-            # 确保 x 坐标不会导致放大的弹窗超出屏幕
-            x = random.randint(0, width - 2)
-            y = random.randint(0, height - 3)           
-            
+            # === 核心修复逻辑 ===
+            if is_mobile:
+                # 手机端：为了防止挤在左边，我们允许弹窗出现在屏幕宽度的 0% 到 70% 之间
+                # 这样即使右边稍微超出屏幕一点，也比挤在左边好
+                max_x = int(width * 0.7)
+                x = random.randint(0, max_x)
+                
+                # 高度分散：利用全屏高度，但避开最顶部和最底部
+                y = random.randint(0, height - 150)
+            else:
+                # 电脑端：原有逻辑，严格防止溢出
+                max_x = width - 230
+                if max_x < 0: max_x = 0
+                x = random.randint(0, max_x)
+                y = random.randint(0, height - 100)
+
             text = random.choice(texts)
             theme = random.choice(themes)
             anim = random.choice(animations)
             popup_params.append((x, y, text, theme, anim))
 
         popup_params
-                    `;
+      `;
 
-      // 执行Python代码并转换为JS数组
       const pythonResult = await pyodide.runPythonAsync(pythonCode);
       const popupParams = Array.from(pythonResult);
 
-      // 创建弹窗并添加到容器
       popupParams.forEach(([x, y, text, theme, anim], index) => {
         setTimeout(() => {
           const popup = document.createElement('div');
-          // 应用样式类
           popup.className = `popup ${theme} ${anim}`;
 
-          // 设置位置
           popup.style.left = `${x}px`;
           popup.style.top = `${y}px`;
 
-          // === 关键优化：使用transform放大，不改变CSS类 ===
+          // 手机端放大处理
           if (isMobile) {
             popup.style.transform = `scale(${scaleRatio})`;
-            popup.style.transformOrigin = 'top left'; // 保证放大后位置偏移可控
+            popup.style.transformOrigin = 'top left';
+            // 增加一点z-index随机性，让重叠更自然
+            popup.style.zIndex = index + 100;
           }
 
-          // 弹窗内容
           popup.innerHTML = `
-                        <div class="header">
-                            <span class="icon">💖</span>
-                            <span class="title">To：xxx</span>
-                        </div>
-                        <div class="content">${text}</div>
-                    `;
-          // 添加到容器
+            <div class="header">
+                <span class="icon">💖</span>
+                <span class="title">To：xxx</span>
+            </div>
+            <div class="content">${text}</div>
+          `;
           popupLayer.appendChild(popup);
-        }, index * 100);
+        }, index * 120); //稍微放慢一点出现速度
       });
     }
 
-    // 播放本地音乐
     function playLocalMusic() {
       localMusic.play().catch(err => {
-        console.log("自动播放需要用户交互，点击页面任意位置继续...");
         document.body.addEventListener('click', () => {
           localMusic.play();
         }, { once: true });
       });
     }
 
-    // 重置弹窗
     function resetPopups() {
-      const popupLayer = document.getElementById("popup-layer");
-      popupLayer.innerHTML = "";
+      document.getElementById("popup-layer").innerHTML = "";
       localMusic.pause();
       localMusic.currentTime = 0;
     }
@@ -174,5 +156,3 @@
 </body>
 
 </html>
-
-
